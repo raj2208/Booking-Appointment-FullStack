@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Booking Appointments</title>
+  </head>
+  <body>
+    <div>
+      <form id="bookingForm" action="" method="post">
+        <label for="userName">UserName</label><br />
+        <input
+          type="text"
+          name="userName"
+          placeholder="Enter your name"
+        /><br />
+        <label for="email">Email</label><br />
+        <input type="email" name="email" placeholder="Enter mail" /><br />
+        <label for="phoneNumber">PhoneNumber</label><br />
+        <input
+          type="tel"
+          name="phoneNumber"
+          placeholder="Enter phone number"
+        /><br />
+        <button type="submit">Submit</button>
+      </form>
+    </div>
+    <div id="details">
+      <ul id="userList"></ul>
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.5.1/axios.min.js"></script>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        let form = document.getElementById("bookingForm");
+        form.addEventListener("submit", (event) => {
+          event.preventDefault();
+          let userName = event.target.userName.value;
+          let email = event.target.email.value;
+          let phoneNumber = event.target.phoneNumber.value;
+          let userDetails = { userName, email, phoneNumber };
+
+          addtoDB(userDetails)
+            .then((res) => {
+              userDetails.id = res.data.id;
+              event.target.reset();
+              addtoList(userDetails);
+            })
+            .catch((error) => {
+              console.error(error);
+            });
+        });
+
+        function addtoList(userDetails) {
+          let li = document.createElement("li");
+          let text = document.createTextNode(
+            `${userDetails.userName} - ${userDetails.email} - ${userDetails.phoneNumber}`
+          );
+          li.appendChild(text);
+
+          let deleteButton = document.createElement("button");
+          deleteButton.innerText = "Delete";
+          deleteButton.onclick = () => deleteRecord(userDetails.id, li);
+
+          let editButton = document.createElement("button");
+          editButton.innerText = "Edit";
+          editButton.onclick = () => editRecord(userDetails, li);
+
+          li.appendChild(deleteButton);
+          li.appendChild(editButton);
+          document.getElementById("userList").appendChild(li);
+        }
+
+        function deleteRecord(id, listItem) {
+          axios
+            .delete(`http://localhost:4000/User/delete/${id}`)
+            .then(() => listItem.remove())
+            .catch((error) => console.error(error));
+        }
+
+        function editRecord(userDetails, listItem) {
+          let userName = prompt("Edit Name", userDetails.userName);
+          let email = prompt("Edit Email", userDetails.email);
+          let phoneNumber = prompt(
+            "Edit Phone Number",
+            userDetails.phoneNumber
+          );
+
+          if (userName && email && phoneNumber) {
+            let updatedDetails = { userName, email, phoneNumber };
+            axios
+              .put(
+                `http://localhost:4000/User/update/${userDetails.id}`,
+                updatedDetails
+              )
+              .then(() => {
+                userDetails.userName = userName;
+                userDetails.email = email;
+                userDetails.phoneNumber = phoneNumber;
+                listItem.firstChild.nodeValue = `${userDetails.userName} - ${userDetails.email} - ${userDetails.phoneNumber}`;
+              })
+              .catch((error) => console.error(error));
+          }
+        }
+
+        function fetchAll() {
+          axios
+            .get("http://localhost:4000/User/get-all-appointment")
+            .then((res) => {
+              res.data.forEach((userDetails) => addtoList(userDetails));
+            })
+            .catch((error) => console.error(error));
+        }
+
+        fetchAll();
+      });
+
+      function addtoDB(userDetails) {
+        return axios.post(
+          "http://localhost:4000/User/create-Product",
+          userDetails
+        );
+      }
+    </script>
+  </body>
+</html>
